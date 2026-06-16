@@ -1,65 +1,178 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+
+type Message = {
+  sender: string;
+  text: string;
+};
 
 export default function Home() {
+  const [fileName, setFileName] = useState("");
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfText, setPdfText] = useState("");
+  const [showChat, setShowChat] = useState(false);
+  const [question, setQuestion] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [quiz, setQuiz] = useState("");
+
+  const handleSend = async () => {
+    const trimmedQuestion = question.trim();
+
+    if (!trimmedQuestion) return;
+
+if (!pdfFile) {
+  alert("Please upload a PDF first");
+  return;
+}
+console.log(pdfFile);
+const formData = new FormData();
+formData.append("pdf", pdfFile);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        sender: "You",
+        text: trimmedQuestion,
+      },
+    ]);
+
+    setQuestion("");
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+  message: trimmedQuestion,
+  fileName: fileName,
+  hasPdf: true,
+}),
+      });
+
+      const data = await response.json();
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "AI",
+          text: data.reply,
+        },
+      ]);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "AI",
+          text: "Something went wrong.",
+        },
+      ]);
+    }
+
+    setLoading(false);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
+      <h1 className="text-4xl font-bold mb-4">
+        LearnSphere AI 🎓
+      </h1>
+
+      <p className="text-lg text-gray-600 mb-8">
+        Your AI-powered learning assistant
+      </p>
+
+      <div className="flex flex-col items-center gap-4">
+        <input
+  type="file"
+  accept=".pdf"
+  onChange={async (e) => {
+  if (e.target.files && e.target.files[0]) {
+    setFileName(e.target.files[0].name);
+    setPdfFile(e.target.files[0]);
+
+    console.log("PDF Selected:", e.target.files[0].name);
+  }
+}}
+/>
+
+        {fileName && (
+          <p className="text-black">
+            Selected File: {fileName}
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+        )}
+
+        <button
+          onClick={() => setShowChat(!showChat)}
+          className="bg-green-500 text-white px-6 py-3 rounded-lg"
+        >
+          AI Chat
+        </button>
+
+        <button
+  onClick={async () => {
+    const response = await fetch("/api/quiz", {
+      method: "POST",
+    });
+
+    const data = await response.json();
+
+    setQuiz(data.quiz);
+  }}
+  className="bg-purple-500 text-white px-6 py-3 rounded-lg"
+>
+  Generate Quiz
+</button>
+{quiz && (
+  <div className="bg-white border-2 border-purple-500 p-4 rounded-lg w-80 text-black">
+    <h3 className="font-bold mb-2">Generated Quiz</h3>
+
+    <pre className="whitespace-pre-wrap font-sans">
+      {quiz}
+    </pre>
+  </div>
+)}
+
+        {showChat && (
+          <div className="border-2 border-black p-4 bg-white rounded-lg flex flex-col gap-3">
+            <input
+              type="text"
+              placeholder="Ask something about your PDF..."
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSend();
+                }
+              }}
+              className="border-2 border-blue-500 p-2 w-80 text-black rounded"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+
+            <button
+              onClick={handleSend}
+              disabled={loading}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+            >
+              {loading ? "Thinking..." : "Send"}
+            </button>
+
+            <div className="mt-4 w-80">
+              {messages.map((msg, index) => (
+                <div
+                  key={index}
+                  className="bg-gray-200 p-2 rounded mb-2 text-black"
+                >
+                  <strong>{msg.sender}:</strong> {msg.text}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
