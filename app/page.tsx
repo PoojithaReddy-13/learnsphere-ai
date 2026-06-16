@@ -107,13 +107,24 @@ formData.append("pdf", pdfFile);
         )}
 
         <button
-          onClick={() => setShowChat(!showChat)}
-          className="bg-green-500 text-white px-6 py-3 rounded-lg"
-        >
-          AI Chat
-        </button>
+  onClick={() => setShowChat(!showChat)}
+  className="bg-green-500 text-white px-6 py-3 rounded-lg"
+>
+  AI Chat
+</button>
 
-        <button
+<button
+  onClick={() => {
+    alert(
+      "Artificial Intelligence is the simulation of human intelligence in machines. AI helps computers learn, reason, and solve problems."
+    );
+  }}
+  className="bg-orange-500 text-white px-6 py-3 rounded-lg"
+>
+  Summarize
+</button>
+
+<button
   onClick={async () => {
     const response = await fetch("/api/quiz", {
       method: "POST",
